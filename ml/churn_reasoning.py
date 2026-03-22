@@ -2,6 +2,7 @@ import sqlite3
 import pandas as pd
 import json
 import os
+from datetime import datetime
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from sklearn.model_selection import train_test_split
@@ -97,7 +98,21 @@ def analyze_churn():
         top_internet = internet_mode[0] if len(internet_mode) > 0 else "Unknown"
         avg_monthly = df_high_risk['MonthlyCharges'].mean()
 
+    # ── Drift baseline ─────────────────────────────────────────────────────────
+    # Captured from training data so future runs can compare live DB against it.
+    contract_dist = (
+        df['Contract'].value_counts(normalize=True).round(4).to_dict()
+    )
+    drift_baseline = {
+        "churn_rate":           round(float(y.mean()), 4),
+        "avg_tenure":           round(float(df['tenure'].mean()), 2),
+        "avg_monthly_charges":  round(float(df['MonthlyCharges'].mean()), 2),
+        "contract_distribution": contract_dist,
+    }
+
     insights = {
+        "generated_at": datetime.now().isoformat(),
+        "drift_baseline": drift_baseline,
         "summary": {
             "model_accuracy": f"{accuracy:.1%}",
             "total_customers": len(df),
